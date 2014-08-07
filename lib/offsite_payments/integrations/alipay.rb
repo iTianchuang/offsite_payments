@@ -110,6 +110,7 @@ module OffsitePayments #:nodoc:
           add_field('sign', Digest::MD5.hexdigest(query_string + KEY))
 
           add_field('sign_type', 'MD5')
+          nil
         end
 
       end
