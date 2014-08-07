@@ -44,6 +44,36 @@ module OffsitePayments #:nodoc:
         end
       end
 
+      module BaseRequestResponse
+        include Sign
+
+        attr_reader :uri
+        attr_reader :req_params, :req_qstring, :res_params, :res
+
+        def send
+          @http = Net::HTTP.new(self.uri.host, self.uri.port)
+          @res = @http.post self.uri.path, self.req_qstring
+          @res_params = parse @res.body
+
+          raise StandardError.new("Response: ILLEGAL_SIGN") unless verify_sign res_params
+          @res
+        end
+
+        private
+
+        # 订单推送应答 (同步)
+        def parse(res)
+          params = {}
+          for line in res.to_s.split('&')
+            key, value = *line.scan( %r{^([A-Za-z0-9_.-]+)\=(.*)$} ).flatten
+            params[key] = CGI.unescape(value.to_s) if key.present?
+          end
+
+          params
+        end
+
+      end
+
       class Helper < OffsitePayments::Helper
         # Replace with the real mapping
         mapping :account, ''
@@ -71,9 +101,8 @@ module OffsitePayments #:nodoc:
         mapping :shipping, ''
       end
 
-      class PushRequest
-        include Sign
-        attr_reader :uri, :req_params, :req_qstring, :res_params, :res
+      class Trade
+        include BaseRequestResponse
 
         def initialize(orderNumber, orderAmount, options = {})
 
@@ -105,27 +134,30 @@ module OffsitePayments #:nodoc:
           @req_qstring = sign! @req_params
         end
 
-        def send
-          @http = Net::HTTP.new(self.uri.host, self.uri.port)
-          @res = @http.post self.uri.path, self.req_qstring
-          @res_params = parse @res.body
+      end
 
-          verify_sign res_params
+      class Query
+        include BaseRequestResponse
+
+        def initialize(orderNumber, orderTime, transType = '01', options = {})
+          @uri = URI.parse('http://202.101.25.178:8080/gateway/merchant/query')
+
+          @req_params = {
+            'merId'            => ACCOUNT,                                                             # 商户代码 
+            'orderNumber'      => orderNumber,                                                         # 商户订单号, 一天内不可以重复
+            'orderTime'        => orderTime,                                                           # 交易开始日期时间, GMT+8
+            'transType'        => transType,                                                           # 消费类型 01: 消费
+
+            'version'          => options[:version] || '1.0.0',                                        # 版本号
+            'charset'          => options[:charset] || 'UTF-8',                                        # 字符编码, GBK, UTF-8
+          
+            'merReserved'      => options[:merReserved],                                               # 商户保留域
+            'sysReserved'      => options[:sysReserved],                                               # 系统保留域
+          }
+
+          @req_qstring = sign! @req_params
         end
-
-        private
-
-        # 订单推送应答 (同步)
-        def parse(res)
-          params = {}
-          for line in res.to_s.split('&')
-            key, value = *line.scan( %r{^([A-Za-z0-9_.-]+)\=(.*)$} ).flatten
-            params[key] = CGI.unescape(value.to_s) if key.present?
-          end
-
-          params
-        end
-
+        
       end
 
       class Notification < OffsitePayments::Notification
