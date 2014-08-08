@@ -48,23 +48,23 @@ module OffsitePayments #:nodoc:
         include Sign
 
         attr_reader :uri
-        attr_reader :req_params, :req_qstring, :res_params, :res
+        attr_reader :req_params, :req_qstring, :resp_params, :resp
 
         def send
           @http = Net::HTTP.new(self.uri.host, self.uri.port)
-          @res = @http.post self.uri.path, self.req_qstring
-          @res_params = parse @res.body
+          @resp = @http.post self.uri.path, self.req_qstring
+          @resp_params = parse @resp.body
 
-          raise StandardError.new("Response: ILLEGAL_SIGN") unless verify_sign res_params
-          @res
+          raise StandardError.new("Response: ILLEGAL_SIGN") unless verify_sign resp_params
+          @resp
         end
 
         private
 
         # 订单推送应答 (同步)
-        def parse(res)
+        def parse(resp)
           params = {}
-          for line in res.to_s.split('&')
+          for line in resp.to_s.split('&')
             key, value = *line.scan( %r{^([A-Za-z0-9_.-]+)\=(.*)$} ).flatten
             params[key] = CGI.unescape(value.to_s) if key.present?
           end
@@ -104,7 +104,7 @@ module OffsitePayments #:nodoc:
       class Trade
         include BaseRequestResponse
 
-        def initialize(orderNumber, orderAmount, options = {})
+        def initialize(orderNumber, orderAmount, backEndUrl, options = {})
 
           @uri = URI.parse('http://202.101.25.178:8080/gateway/merchant/trade')
 
@@ -112,16 +112,17 @@ module OffsitePayments #:nodoc:
             'merId'            => ACCOUNT,                                                             # 商户代码 
             'orderNumber'      => orderNumber,                                                         # 商户订单号, 一天内不可以重复
             'orderAmount'      => orderAmount,                                                         # 交易金额, 本域中不带小数点 参阅 6.15
+            'backEndUrl'       => backEndUrl,                                                          # 通知 URL
+
+            'acqCode'          => options[:acqCode],                                                   # 收单机构代码
 
             'version'          => options[:version] || '1.0.0',                                        # 版本号
             'charset'          => options[:charset] || 'UTF-8',                                        # 字符编码, GBK, UTF-8
             'transType'        => options[:transType] || '01',                                         # 消费类型 01: 消费
+            'frontEndUrl'      => options[:frontEndUrl],                                               # 前台通知 URL
 
-            'backEndUrl'       => options[:backEndUrl],                                                # 通知 URL
-            'frontEndUrl'      => options[:frontEndUrl] || options[:backEndUrl],                       # 前台通知 URL
-            'acqCode'          => options[:acqCode],                                                   # 收单机构代码
             'orderTime'        => options[:orderTime] || Time.current.strftime('%Y%m%d%H%m%S'),        # 交易开始日期时间, GMT+8
-            'orderTimeout'     => options[:orderTimeout] || 1.hour.from_now.strftime('%Y%m%d%H%m%S'),   # 订单超时时间
+            'orderTimeout'     => options[:orderTimeout],                                              # 订单超时时间，默认1小时，若有设置, 则最大1小时
           
             'orderCurrency'    => options[:orderCurrency] || '156',                                    # 交易币种 156: 人民币
             'orderDescription' => options[:orderDescription],                                          # 订单描述
@@ -165,43 +166,18 @@ module OffsitePayments #:nodoc:
           params['']
         end
 
-        def item_id
-          params['']
-        end
-
-        def transaction_id
-          params['']
-        end
-
-        # When was this payment received by the client.
-        def received_at
-          params['']
-        end
-
-        def payer_email
-          params['']
-        end
-
-        def receiver_email
-          params['']
-        end
-
-        def security_key
-          params['']
-        end
-
-        # the money amount we received in X.2 decimal.
-        def gross
-          params['']
-        end
-
-        # Was this a test transaction?
-        def test?
-          params[''] == 'test'
-        end
-
-        def status
-          params['']
+        ['version', 'charset', 
+         'transType', 'merId', 'transStatus', 'qn', 
+         'orderNumber', 'orderTime',
+         'settleAmount', 'settleCurency', 'settleDate',
+         'respCode', 'respMsg',
+         'exchangeRate', 'exchangeDate',
+         'merReserved', 'reqReserved', 'sysReserved'].each do |param|
+          self.class_eval <<-EOF
+              def #{param}
+                params['#{param}']
+              end
+            EOF
         end
 
         # Acknowledge the transaction to Unionpay. This method has to be called after a new
