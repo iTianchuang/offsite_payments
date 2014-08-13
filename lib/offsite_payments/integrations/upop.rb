@@ -55,7 +55,7 @@ module OffsitePayments #:nodoc:
             'orderNumber'      => orderNumber,                       # 商户订单号, 一天内不可以重复
             'orderTime'        => orderTime,                         # 交易开始日期时间, GMT+8
             
-            'merReserved'      => options[:merReserved],             # 商户保留域
+            'merReserved'      => options[:merReserved]              # 商户保留域
           }
 
           @req_qstring = sign! @req_params, @key
@@ -112,7 +112,7 @@ module OffsitePayments #:nodoc:
         # Date型参数
         [
          'traceTime',           # 系统跟踪时间
-         'respTime'             # 交易完成时间
+         'respTime',            # 交易完成时间
          'settleDate',          # 清算日期
          'exchangeDate'         # 兑换日期
         ].each do |param|
