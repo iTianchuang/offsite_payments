@@ -54,13 +54,26 @@ module OffsitePayments #:nodoc:
           transStatus
         end
 
+        # 互联网商户接入接口规范 表5 消费交易应答消息
         # 字符串, number, 状态 型参数
-        ['version', 'charset', 
-         'transType', 'merId', 'transStatus', 'qn', 
-         'respCode', 'respMsg',
-         'orderNumber', 'exchangeRate',
-         'settleAmount', 'settleCurency', 'settleDate',
-         'merReserved', 'reqReserved', 'sysReserved'].each do |param|
+        [
+         'version',             # 版本号
+         'charset',             # 字符编码
+         'transType',           # 交易类型
+         'respCode',            # 响应码
+         'respMsg',             # 响应信息
+         'merAbbr',             # 商户名称
+         'merId',               # 商户代码
+         'orderNumber',         # 商户订单号
+         'traceNumber',         # 系统跟踪号
+         'qid',                 # 交易流水号
+         'orderAmount',         # 交易金额
+         'orderCurrency',       # 交易币种
+         'settleAmount',        # 清算金额
+         'settleCurency',       # 清算币种
+         'exchangeRate',        # 清算汇率
+         'cupReserved'          # 系统保留域
+        ].each do |param|
           self.class_eval <<-EOF
               def #{param}
                 params['#{param}']
@@ -69,7 +82,12 @@ module OffsitePayments #:nodoc:
         end
 
         # Date型参数
-        ['exchangeDate', 'orderTime'].each do |param|
+        [
+         'traceTime',           # 系统跟踪时间
+         'respTime'             # 交易完成时间
+         'settleDate',          # 清算日期
+         'exchangeDate'         # 兑换日期
+        ].each do |param|
           self.class_eval <<-EOF
               def #{param}
                 Time.parse params['#{param}']

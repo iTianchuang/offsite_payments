@@ -84,13 +84,25 @@ module OffsitePayments #:nodoc:
           transStatus
         end
 
+        # 商户后台接口 表 11 支付结果通知
         # 字符串, number, 状态 型参数
-        ['version', 'charset', 
-         'transType', 'merId', 'transStatus', 'qn', 
-         'respCode', 'respMsg',
-         'orderNumber', 'exchangeRate',
-         'settleAmount', 'settleCurency', 'settleDate',
-         'merReserved', 'reqReserved', 'sysReserved'].each do |param|
+        [
+         'version',             # 版本号
+         'charset',             # 字符编码
+         'transType',           # 交易类型
+         'merId',               # 商户代码
+         'transStatus',         # 交易状态
+         'respCode',            # 响应码
+         'respMsg',             # 响应信息
+         'qn',                  # 查询流水号
+         'orderNumber',         # 商户订单号
+         'settleAmount',        # 清算金额
+         'settleCurency',       # 清算币种
+         'exchangeRate',        # 清算汇率
+         'merReserved',         # 商户保留域
+         'reqReserved',         # 请求方保留域
+         'sysReserved'          # 系统保留域
+        ].each do |param|
           self.class_eval <<-EOF
               def #{param}
                 params['#{param}']
@@ -99,7 +111,11 @@ module OffsitePayments #:nodoc:
         end
 
         # Date型参数
-        ['exchangeDate', 'orderTime'].each do |param|
+        [
+         'orderTime',           # 交易开始时间
+         'settleDate',          # 清算日期
+         'exchangeDate'         # 兑换日期
+        ].each do |param|
           self.class_eval <<-EOF
               def #{param}
                 Time.parse params['#{param}']
