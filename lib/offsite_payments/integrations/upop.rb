@@ -3,11 +3,39 @@ module OffsitePayments #:nodoc:
   module Integrations #:nodoc:
     module Upop
 
-      mattr_accessor :service_url
-      self.service_url = 'https://www.example.com'
-
       class Helper < OffsitePayments::Helper
-        # TODO
+
+        # 互联网商户接入接口规范 表 4 消费交易请求消息
+        mapping :version,                'version'            # 接口名称
+        mapping :charset,                'charset'            # 合作者身份ID
+
+        # signMethod
+        # signature
+
+        mapping :transType,              'transType'          # 交易类型
+        mapping :merAbbr,                'merAbbr'            # 商户名称
+        mapping :merId,                  'merId'              # 商户代码
+
+        mapping :backEndUrl,             'backEndUrl'         # 通知 URL
+        mapping :fronEndUrl,             'frontEndUrl'        # 返回 URL
+        mapping :acqCode,                'acqCode'            # 收单机构代码
+        mapping :orderTime,              'orderTime'          # 交易开始日期时间 
+        mapping :orderNumber,            'orderNumber'        # 商户订单号
+        mapping :commodityName,          'commodityName'      # 商品名称
+        mapping :commodityUrl,           'commodityUrl'       # 商品URL
+        mapping :commodityUnitPrice,     'commodityUnitPrice' # 商品单价
+        mapping :commodityQuantity,      'commodityQuantity'  # 商品数量
+        mapping :transferFee,            'transferFee'        # 运输费用
+        mapping :commodityDiscount,      'commodityDiscount'  # 优惠信息
+        mapping :orderAmount,            'orderAmount'        # 交易金额
+        mapping :orderCurrency,          'orderCurrency'      # 交易币种
+        mapping :customerName,           'cutomerName'        # 持卡人姓名
+        mapping :defaultPayType,         'defaultpayType'     # 默认支付方式
+        mapping :defaultBankNumber,      'defaultBankNumber'  # 默认银行编码
+        mapping :transTimeout,           'transTimeout'       # 交易超时时间
+        mapping :customerIp,             'customerIp'         # 持卡人IP
+        mapping :origQid,                'origQid'            # 原始交易流水号
+        mapping :merReserved,            'merReserved'        # 商户保留域
       end
 
       class Query
@@ -18,16 +46,16 @@ module OffsitePayments #:nodoc:
           @uri = URI.parse QUERY_URL
 
           @req_params = {
-            'version'          => options[:version] || '1.0.0',                                        # 版本号
-            'charset'          => options[:charset] || 'UTF-8',                                        # 字符编码, GBK, UTF-8
+            'version'          => options[:version] || '1.0.0',      # 版本号
+            'charset'          => options[:charset] || 'UTF-8',      # 字符编码, GBK, UTF-8
 
-            'transType'        => transType,                                                           # 消费类型 01: 消费
+            'transType'        => transType,                         # 消费类型 01: 消费
 
-            'merId'            => ACCOUNT,                                                             # 商户代码 
-            'orderNumber'      => orderNumber,                                                         # 商户订单号, 一天内不可以重复
-            'orderTime'        => orderTime,                                                           # 交易开始日期时间, GMT+8
+            'merId'            => ACCOUNT,                           # 商户代码 
+            'orderNumber'      => orderNumber,                       # 商户订单号, 一天内不可以重复
+            'orderTime'        => orderTime,                         # 交易开始日期时间, GMT+8
             
-            'merReserved'      => options[:merReserved],                                               # 商户保留域
+            'merReserved'      => options[:merReserved],             # 商户保留域
           }
 
           @req_qstring = sign! @req_params, @key

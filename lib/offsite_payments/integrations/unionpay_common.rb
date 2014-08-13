@@ -3,9 +3,6 @@ module OffsitePayments #:nodoc:
   module Integrations #:nodoc:
     module UnionpayCommon
 
-      mattr_accessor :service_url
-      self.service_url = 'https://www.example.com'
-
       def self.notification(post)
         Notification.new(post)
       end
