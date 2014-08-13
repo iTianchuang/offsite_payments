@@ -18,16 +18,16 @@ module OffsitePayments #:nodoc:
           @uri = URI.parse QUERY_URL
 
           @req_params = {
+            'version'          => options[:version] || '1.0.0',                                        # 版本号
+            'charset'          => options[:charset] || 'UTF-8',                                        # 字符编码, GBK, UTF-8
+
+            'transType'        => transType,                                                           # 消费类型 01: 消费
+
             'merId'            => ACCOUNT,                                                             # 商户代码 
             'orderNumber'      => orderNumber,                                                         # 商户订单号, 一天内不可以重复
             'orderTime'        => orderTime,                                                           # 交易开始日期时间, GMT+8
-            'transType'        => transType,                                                           # 消费类型 01: 消费
-
-            'version'          => options[:version] || '1.0.0',                                        # 版本号
-            'charset'          => options[:charset] || 'UTF-8',                                        # 字符编码, GBK, UTF-8
             
             'merReserved'      => options[:merReserved],                                               # 商户保留域
-            'sysReserved'      => options[:sysReserved],                                               # 系统保留域
           }
 
           @req_qstring = sign! @req_params, @key
