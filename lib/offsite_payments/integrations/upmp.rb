@@ -1,89 +1,15 @@
 # -*- coding: utf-8 -*-
 module OffsitePayments #:nodoc:
   module Integrations #:nodoc:
-    module Unionpay
-
-      mattr_accessor :service_url
-      self.service_url = 'https://www.example.com'
-
-      def self.notification(post)
-        Notification.new(post)
-      end
-
-      module Sign
-
-        # 订单推送请求 签名 附录B报文签名
-        def sign!(params)
-          params.delete('signMethod')
-          params.delete('signature')
-          params.compact!                                                                             # 空值不参与签名计算
-
-          query_string_not_sign = params.sort.collect{ |s|s[0].to_s + "=" + s[1].to_s }.join("&")  # 被签名字符串中的按照key值做升序排序
-
-          query_string_for_sign = "#{query_string_not_sign}&#{Digest::MD5.hexdigest(KEY)}"
-          signature = Digest::MD5.hexdigest query_string_for_sign                                          # MD5签名
-
-          params['signMethod'] = 'MD5'
-          params['signature'] = signature
-
-          query_string = params.sort.collect{ |s|s[0].to_s + "=" + s[1].to_s }.join("&")
-          query_string = "#{query_string}&#{Digest::MD5.hexdigest(KEY)}"
-
-          query_string
-        end
-
-        # 通知返回时验证签名
-        def verify_sign(params)
-          p = params.dup
-          sign_method = p.delete("signMethod")
-          signature = p.delete("signature")
-
-          query_string = p.sort.collect{ |s|s[0].to_s + "=" + s[1].to_s }.join("&")  
-
-          Digest::MD5.hexdigest("#{query_string}&#{Digest::MD5.hexdigest(KEY)}") == signature.downcase
-        end
-      end
-
-      module BaseRequestResponse
-        include Sign
-
-        attr_reader :uri
-        attr_reader :req_params, :req_qstring, :resp_params, :resp
-
-        def send
-          @http = Net::HTTP.new(self.uri.host, self.uri.port)
-          @resp = @http.post self.uri.path, self.req_qstring
-          @resp_params = parse @resp.body
-
-          raise StandardError.new("Response: ILLEGAL_SIGN") unless verify_sign resp_params
-          @resp
-        end
-
-        private
-
-        # 订单推送应答 (同步)
-        def parse(resp)
-          params = {}
-          for line in resp.to_s.split('&')
-            key, value = *line.scan( %r{^([A-Za-z0-9_.-]+)\=(.*)$} ).flatten
-            params[key] = CGI.unescape(value.to_s) if key.present?
-          end
-
-          params
-        end
-
-      end
-
-      class Helper < OffsitePayments::Helper
-        # TODO
-      end
+    module Upmp
 
       class Trade
-        include BaseRequestResponse
+        include UnionpayCommon::BaseRequestResponse
 
         def initialize(orderNumber, orderAmount, backEndUrl, options = {})
 
-          @uri = URI.parse('http://202.101.25.178:8080/gateway/merchant/trade')
+          @key = KEY
+          @uri = URI.parse PAY_URL
 
           @req_params = {
             'merId'            => ACCOUNT,                                                             # 商户代码 
@@ -109,16 +35,17 @@ module OffsitePayments #:nodoc:
             'sysReserved'      => options[:sysReserved],                                               # 系统保留域
           }
 
-          @req_qstring = sign! @req_params
+          @req_qstring = sign! @req_params, @key
         end
 
       end
 
       class Query
-        include BaseRequestResponse
+        include UnionpayCommon::BaseRequestResponse
 
         def initialize(orderNumber, orderTime, transType = '01', options = {})
-          @uri = URI.parse('http://202.101.25.178:8080/gateway/merchant/query')
+          @key = KEY
+          @uri = URI.parse QUERY_URL
 
           @req_params = {
             'merId'            => ACCOUNT,                                                             # 商户代码 
@@ -133,12 +60,14 @@ module OffsitePayments #:nodoc:
             'sysReserved'      => options[:sysReserved],                                               # 系统保留域
           }
 
-          @req_qstring = sign! @req_params
+          @req_qstring = sign! @req_params, @key
         end
         
       end
 
       class Notification < OffsitePayments::Notification
+        include UnionpayCommon::Sign
+
         def complete?
           '00' == self.status
         end
@@ -178,14 +107,14 @@ module OffsitePayments #:nodoc:
             EOF
         end
 
-        # Acknowledge the transaction to Unionpay. This method has to be called after a new
-        # apc arrives. Unionpay will verify that all the information we received are correct and will return a
+        # Acknowledge the transaction to UPMP. This method has to be called after a new
+        # apc arrives. UPMP will verify that all the information we received are correct and will return a
         # ok or a fail.
         #
         # Example:
         #
         #   def ipn
-        #     notify = UnionpayNotification.new(request.raw_post)
+        #     notify = Notification.new(request.raw_post)
         #
         #     if notify.acknowledge
         #       ... process order ... if notify.complete?
@@ -193,8 +122,7 @@ module OffsitePayments #:nodoc:
         #       ... log possible hacking attempt ...
         #     end
         def acknowledge
-          raise StandardError.new("Faulty unionpay result: ILLEGAL_SIGN") unless verify_sign params
-          true
+          verify_sign! params, KEY
         end
       end
     end
