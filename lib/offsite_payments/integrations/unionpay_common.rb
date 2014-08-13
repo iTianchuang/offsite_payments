@@ -41,7 +41,7 @@ module OffsitePayments #:nodoc:
         end
 
         def verify_sign!(params, key)
-          raise StandardError.new("Faulty unionpay result: ILLEGAL_SIGN") unless verify_sign resp_params, key
+          raise StandardError.new("Faulty unionpay result: ILLEGAL_SIGN") unless verify_sign params, key
         end
       end
 
