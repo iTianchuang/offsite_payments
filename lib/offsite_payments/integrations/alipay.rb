@@ -116,9 +116,30 @@ module OffsitePayments #:nodoc:
       end
 
       module Sign
+        ALIPAY_PUB_KEY = "-----BEGIN PUBLIC KEY-----\n" \
+        "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCnxj/9qwVfgoUh/y2W89L6BkRA\n" \
+        "FljhNhgPdyPuBV64bfQNN1PjbCzkIM6qRdKBoLPXmKKMiFYnkd6rAoprih3/PrQE\n" \
+        "B/VsW8OoM8fxn67UDYuyBTqA23MML9q1+ilIZwBC2AQ2UBVOrFXfFl75p6/B5Ksi\n" \
+        "NG9zpgmLCUYuLkxpLQIDAQAB\n" \
+        "-----END PUBLIC KEY-----"
+
         # 标准双接口 8.2签名 8.2.1 MD5 签名
         # 通知返回时验证签名
         def verify?
+          sign_type = @params["sign_type"]
+
+          case sign_type
+          when "MD5"
+            verify_by_md5?
+          when "RSA"
+            verify_by_rsa?
+          else
+            raise StandardError.new("Faulty alipay result: ILLEGAL_SIGN_TYPE: #{sign_type}")
+          end
+
+        end
+
+        def verify_by_md5?
           sign_type = @params.delete("sign_type")
           sign = @params.delete("sign")
 
@@ -131,6 +152,19 @@ module OffsitePayments #:nodoc:
           end
 
           Digest::MD5.hexdigest(md5_string.join("&")+KEY) == sign.downcase
+        end
+
+        def verify_by_rsa?
+          pkey = OpenSSL::PKey::RSA.new(ALIPAY_PUB_KEY)
+          digest = OpenSSL::Digest::SHA1.new
+
+          params.delete('sign_type')
+          sign = params.delete('sign')
+
+          to_sign = params.sort.map { |item| item.join('=') }.join('&')
+
+          pkey.verify(digest, Base64.decode64(sign), to_sign)
+
         end
       end
 
