@@ -30,7 +30,7 @@ module OffsitePayments #:nodoc:
         end
 
         # 通知返回时验证签名
-        def verify_sign(params, key)
+        def verify?(params, key)
           p = params.dup
           sign_method = p.delete("signMethod")
           signature = p.delete("signature")
@@ -41,7 +41,7 @@ module OffsitePayments #:nodoc:
         end
 
         def verify_sign!(params, key)
-          raise StandardError.new("Faulty unionpay result: ILLEGAL_SIGN") unless verify_sign params, key
+          raise StandardError.new("Faulty unionpay result: ILLEGAL_SIGN") unless verify? params, key
         end
       end
 

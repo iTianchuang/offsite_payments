@@ -138,7 +138,7 @@ module OffsitePayments #:nodoc:
         #       ... log possible hacking attempt ...
         #     end
         def acknowledge
-          verify_sign params, KEY
+          verify? params, KEY
         end
       end
     end
