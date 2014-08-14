@@ -118,7 +118,7 @@ module OffsitePayments #:nodoc:
       module Sign
         # 标准双接口 8.2签名 8.2.1 MD5 签名
         # 通知返回时验证签名
-        def verify_sign
+        def verify?
           sign_type = @params.delete("sign_type")
           sign = @params.delete("sign")
 
@@ -150,7 +150,7 @@ module OffsitePayments #:nodoc:
         end
 
         def success?
-          unless verify_sign
+          unless verify?
             @message = "Alipay Error: ILLEGAL_SIGN"
             return false
           end
@@ -199,7 +199,7 @@ module OffsitePayments #:nodoc:
         #       ... log possible hacking attempt ...
         #     end
         def acknowledge
-          raise StandardError.new("Faulty alipay result: ILLEGAL_SIGN") unless verify_sign
+          raise StandardError.new("Faulty alipay result: ILLEGAL_SIGN") unless verify?
           true
         end
 
