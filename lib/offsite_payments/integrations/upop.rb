@@ -2,7 +2,9 @@
 module OffsitePayments #:nodoc:
   module Integrations #:nodoc:
     module Upop
+      mattr_accessor :service_url
 
+      self.service_url = Setting.upop.pay_url
       class Helper < OffsitePayments::Helper
 
         # 互联网商户接入接口规范 表 4 消费交易请求消息
@@ -36,6 +38,17 @@ module OffsitePayments #:nodoc:
         mapping :customerIp,             'customerIp'         # 持卡人IP
         mapping :origQid,                'origQid'            # 原始交易流水号
         mapping :merReserved,            'merReserved'        # 商户保留域
+
+        include UnionpayCommon::BaseRequestResponse
+
+        def sign
+          @req_qstring = sign! @fields, KEY.to_s
+
+          add_field('signature', @fields["signature"])
+
+          add_field('signMethod', @fields["signMethod"])
+          nil
+        end
       end
 
       class Query
