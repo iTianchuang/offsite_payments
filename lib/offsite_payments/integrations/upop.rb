@@ -92,7 +92,7 @@ module OffsitePayments #:nodoc:
         end
 
         def status              # 3. 商户后台接口 表6
-          transStatus
+          respCode
         end
 
         # 互联网商户接入接口规范 表5 消费交易应答消息
