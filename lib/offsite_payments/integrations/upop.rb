@@ -19,7 +19,7 @@ module OffsitePayments #:nodoc:
         mapping :merId,                  'merId'              # 商户代码
 
         mapping :backEndUrl,             'backEndUrl'         # 通知 URL
-        mapping :fronEndUrl,             'frontEndUrl'        # 返回 URL
+        mapping :frontEndUrl,            'frontEndUrl'        # 返回 URL
         mapping :acqCode,                'acqCode'            # 收单机构代码
         mapping :orderTime,              'orderTime'          # 交易开始日期时间 
         mapping :orderNumber,            'orderNumber'        # 商户订单号
