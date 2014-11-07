@@ -106,7 +106,15 @@ module OffsitePayments #:nodoc:
         # 标准双接口 8.2签名 8.2.1 MD5 签名
         # 请求时签名
         def sign
-          query_string = @fields.sort.collect{ |s|s[0] + "=" + CGI.unescape(s[1]) }.join("&")
+          #query_string = @fields.sort.collect{ |s|s[0] + "=" + CGI.unescape(s[1]) }.join("&")
+          #subject 可能有+号 跳过 CGI.unescape
+          query_string = @fields.sort.collect do |s|
+            unless s[0] == "subject"
+              s[0] + "=" + CGI.unescape(s[1])
+            else
+              s[0] + "=" + s[1]
+            end
+          end.join("&")
           add_field('sign', Digest::MD5.hexdigest(query_string + KEY))
 
           add_field('sign_type', 'MD5')
